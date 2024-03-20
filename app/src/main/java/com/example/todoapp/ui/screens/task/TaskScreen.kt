@@ -34,6 +34,7 @@ fun TaskScreen(selectedTask : ToDoTask?,
     val title : String = sharedViewModel.title
     val description : String = sharedViewModel.description
     val priority : Priority = sharedViewModel.priority
+    val date : String = sharedViewModel.date
 
     val context = LocalContext.current
 
@@ -50,6 +51,7 @@ fun TaskScreen(selectedTask : ToDoTask?,
                     navigateToListScreen(action)
                 } else {
                     if (sharedViewModel.validateFields()) {
+                        sharedViewModel.scheduleNotification(context,sharedViewModel.date)
                         navigateToListScreen(action)
                     } else {
                         displayToast(context = context)
@@ -65,7 +67,9 @@ fun TaskScreen(selectedTask : ToDoTask?,
             description = description,
             onDescriptionChanged = {sharedViewModel.updateDescription(it)},
             priority = priority,
-            onPriorityChanged = {sharedViewModel.updatePriority(it)}
+            onPriorityChanged = {sharedViewModel.updatePriority(it)},
+            date = date,
+            onDateChanged = {sharedViewModel.updateDate(it)}
         )
         Modifier.padding(it)
     }

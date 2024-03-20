@@ -1,6 +1,8 @@
 package com.example.todoapp.ui.screens.list
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.FloatingActionButton
@@ -20,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.todoapp.R
@@ -31,6 +34,7 @@ import com.example.todoapp.util.Action
 import com.example.todoapp.util.SearchAppBarState
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ListScreen(navigateToTaskScreen : (taskId: Int) -> Unit,sharedViewModel: SharedViewModel){
     var darkTheme : Color = Color.White
@@ -38,6 +42,8 @@ fun ListScreen(navigateToTaskScreen : (taskId: Int) -> Unit,sharedViewModel: Sha
         darkTheme = DarkGray
 
     val action = sharedViewModel.action
+
+    val context = LocalContext.current
 
     val allTasks by sharedViewModel.allTasks.collectAsState()
     val searchTasks by sharedViewModel.searchTasks.collectAsState()
@@ -51,7 +57,9 @@ fun ListScreen(navigateToTaskScreen : (taskId: Int) -> Unit,sharedViewModel: Sha
 
     DisplaySnackBar(
         scaffoldState = scaffoldState,
-        handleDatabaseActions = {sharedViewModel.handleDatabaseAction(action)},
+        handleDatabaseActions = {
+            sharedViewModel.handleDatabaseAction(action)
+        },
         onUndoClicked = {sharedViewModel.updateAction(it)},
         taskTitle = sharedViewModel.title,
         action = action

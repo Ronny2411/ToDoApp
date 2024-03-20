@@ -226,12 +226,20 @@ fun TaskItem(
                     }
                 }
             }
-            Text(text = toDoTask.description,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colors.taskItemContentColor,
-                style = MaterialTheme.typography.subtitle1,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis)
+            Row {
+                Text(text = toDoTask.description,
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colors.taskItemContentColor,
+                    style = MaterialTheme.typography.subtitle1,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis)
+                Text(text = toDoTask.date,
+                    modifier = Modifier,
+                    color = MaterialTheme.colors.taskItemContentColor,
+                    style = MaterialTheme.typography.subtitle1,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }
@@ -244,6 +252,7 @@ fun TaskItemPreview(){
         0,
         "Title",
         "Description",
-        Priority.MEDIUM
+        Priority.MEDIUM,
+        "12/12/2002"
     ), navigateToTaskScreen = {})
 }

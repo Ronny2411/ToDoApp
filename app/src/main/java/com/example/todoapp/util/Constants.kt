@@ -16,4 +16,9 @@ object Constants {
 
     const val MAX_TITLE_LENGTH = 20
     const val SPLASH_SCREEN_DELAY = 2000L
+
+    const val NOTIFICATION_ID = 1
+    const val CHANNEL_ID = "channelId"
+    const val TITLE_EXTRA = "titleExtra"
+    const val MESSAGE_EXTRA = "messageExtra"
 }

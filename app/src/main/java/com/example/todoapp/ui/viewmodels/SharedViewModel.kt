@@ -1,10 +1,24 @@
 package com.example.todoapp.ui.viewmodels
 
+import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.AlertDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Context.NOTIFICATION_SERVICE
+import android.content.Intent
+import android.os.Build
+import android.text.format.DateFormat
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoapp.data.models.Priority
@@ -12,7 +26,12 @@ import com.example.todoapp.data.models.ToDoTask
 import com.example.todoapp.data.repositories.DataStoreRepository
 import com.example.todoapp.data.repositories.ToDoRepository
 import com.example.todoapp.util.Action
+import com.example.todoapp.util.Constants.CHANNEL_ID
 import com.example.todoapp.util.Constants.MAX_TITLE_LENGTH
+import com.example.todoapp.util.Constants.MESSAGE_EXTRA
+import com.example.todoapp.util.Constants.NOTIFICATION_ID
+import com.example.todoapp.util.Constants.TITLE_EXTRA
+import com.example.todoapp.util.Notification
 import com.example.todoapp.util.RequestState
 import com.example.todoapp.util.SearchAppBarState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +43,9 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,7 +55,6 @@ class SharedViewModel @Inject constructor(
 
     var action by mutableStateOf(Action.NO_ACTION)
         private set
-
     var id by mutableStateOf(0)
         private set
     var title by mutableStateOf("")
@@ -41,6 +62,11 @@ class SharedViewModel @Inject constructor(
     var description by mutableStateOf("")
         private set
     var priority by mutableStateOf(Priority.LOW)
+        private set
+
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val selectedDate = dateFormat.format(Date(System.currentTimeMillis()))
+    var date by mutableStateOf("")
         private set
 
     var searchAppBarState by mutableStateOf(SearchAppBarState.CLOSED)
@@ -141,7 +167,8 @@ class SharedViewModel @Inject constructor(
             val toDoTask = ToDoTask(
                 title = title,
                 description = description,
-                priority = priority
+                priority = priority,
+                date = date
             )
             repository.addTask(toDoTask = toDoTask)
         }
@@ -155,7 +182,8 @@ class SharedViewModel @Inject constructor(
                 id = id,
                 title = title,
                 description = description,
-                priority = priority
+                priority = priority,
+                date = date
             )
             repository.updateTask(toDoTask = toDoTask)
         }
@@ -169,7 +197,8 @@ class SharedViewModel @Inject constructor(
                 id = id,
                 title = title,
                 description = description,
-                priority = priority
+                priority = priority,
+                date = date
             )
             repository.deleteTask(toDoTask = toDoTask)
         }
@@ -213,11 +242,13 @@ class SharedViewModel @Inject constructor(
             title = selectedTask.title
             description = selectedTask.description
             priority = selectedTask.priority
+            date = selectedTask.date
         } else {
             id = 0
             title = ""
             description = ""
             priority = Priority.LOW
+            date = selectedDate.toString()
         }
     }
 
@@ -238,6 +269,10 @@ class SharedViewModel @Inject constructor(
         priority = newPriority
     }
 
+    fun updateDate(newDate : String){
+        date = newDate
+    }
+
     fun updateSearchAppBarState(newSearchAppBarState: SearchAppBarState){
         searchAppBarState = newSearchAppBarState
     }
@@ -248,5 +283,48 @@ class SharedViewModel @Inject constructor(
 
     fun validateFields() : Boolean{
         return title.isNotEmpty() && description.isNotEmpty()
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    fun scheduleNotification(context: Context,date: String){
+        val intent = Intent(context,Notification::class.java)
+        val notifTitle = "Your Task is about to Expire!"
+        val message = title
+        intent.putExtra(TITLE_EXTRA,notifTitle)
+        intent.putExtra(MESSAGE_EXTRA,message)
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            NOTIFICATION_ID,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        if (date.isNotEmpty()) {
+            val taskDate = dateFormat.parse(date)
+            val taskTime = taskDate?.time ?: 0
+            val scheduledTime = taskTime - (24 * 60 * 60 * 1000)
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                scheduledTime,
+                pendingIntent
+            )
+            if (scheduledTime>taskTime) {
+                showAlert(context, scheduledTime)
+            } else {
+                showAlert(context, taskTime)
+            }
+        }
+    }
+
+    private fun showAlert(context: Context, currentTime: Long) {
+        val date = dateFormat.format(Date(currentTime))
+
+        AlertDialog.Builder(context)
+            .setTitle("Task Scheduled")
+            .setMessage("You will be reminded on: $date")
+            .setPositiveButton("Okay"){_,_->}
+            .show()
     }
 }
